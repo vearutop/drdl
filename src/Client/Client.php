@@ -37,13 +37,14 @@ class Client
      */
     public function getAlbums($username)
     {
-        $response = $this->http->fetch('http://drd.fm/profile/' . $username . '/albums/');
+        //http://drd.fm/profile/soltpain/albums
+        $response = $this->http->fetch('http://drd.fm/profile/' . $username . '/albums');
         //print_r($response);
         $parser = new Parser($response);
 
         $albums = array();
 
-        foreach ($parser->innerAll('<tr><td class=\'item\'>', '</tr>') as $item) {
+        foreach ($parser->innerAll('<div class="head">', '</div>') as $item) {
             //echo $item;
             $album = new Album();
             $album->id = trim($item->inner('/reply/album/', '"'));
