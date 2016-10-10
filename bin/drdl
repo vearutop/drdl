@@ -1,0 +1,7 @@
+#!/usr/bin/env php -d memory_limit=4G
+<?php
+
+set_time_limit(0);
+require_once __DIR__ . '/../vendor/autoload.php';
+
+\Yaoi\Cli\Command\Runner::create(\DRDL\Favorite::create())->run();

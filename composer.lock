@@ -1,0 +1,64 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "This file is @generated automatically"
+    ],
+    "hash": "e5fb89882d12d40dfd61cacc20441619",
+    "content-hash": "db6bfd6a05a43556c64946430535cc92",
+    "packages": [
+        {
+            "name": "php-yaoi/php-yaoi",
+            "version": "v1.0.28",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/php-yaoi/php-yaoi.git",
+                "reference": "c928d470bb1d765edd302730aea12a0ba9bff7a6"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/php-yaoi/php-yaoi/zipball/c928d470bb1d765edd302730aea12a0ba9bff7a6",
+                "reference": "c928d470bb1d765edd302730aea12a0ba9bff7a6",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.0"
+            },
+            "require-dev": {
+                "codeclimate/php-test-reporter": "0.1.2",
+                "phpunit/phpunit": "4.8.23"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Yaoi\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Viacheslav Poturaev",
+                    "email": "vearutop@gmail.com",
+                    "homepage": "https://github.com/vearutop"
+                }
+            ],
+            "description": "Yaoi is yet another object interleaver",
+            "homepage": "https://github.com/php-yaoi/php-yaoi",
+            "keywords": [
+                "framework"
+            ],
+            "time": "2016-09-27 04:57:25"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": []
+}

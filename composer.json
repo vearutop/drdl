@@ -1,0 +1,13 @@
+{
+    "autoload": {
+        "psr-4": {
+            "DRDL\\": "src/"
+        }
+    },
+    "bin": [
+        "bin/drdl"
+    ],
+    "require": {
+        "php-yaoi/php-yaoi": "^1.0"
+    }
+}
