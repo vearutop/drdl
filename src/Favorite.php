@@ -3,6 +3,8 @@
 namespace DRDL;
 
 
+use DRDL\Client\Album;
+use DRDL\Client\Artist;
 use DRDL\Client\Client;
 use Yaoi\Command;
 use Yaoi\Io\Content\Heading;
@@ -11,10 +13,11 @@ class Favorite extends Command
 {
     public $user;
     public $pass;
-    public $storage = '.';
+    public $storage = './drd.fm';
 
     public $tracksOnly;
     public $albumsOnly;
+    public $allPlayLists;
 
     public $favUser;
 
@@ -50,6 +53,7 @@ class Favorite extends Command
 
         $options->tracksOnly = Command\Option::create()->setDescription("Fetch only favorite tracks");
         $options->albumsOnly = Command\Option::create()->setDescription("Fetch only favorite albums");
+        $options->allPlayLists = Command\Option::create()->setDescription("Fetch all artists playlists");
 
         $options->favUser = Command\Option::create()->setType()->setDescription("Profile name to fetch from, default: YOU, BITCH!");
     }
@@ -101,6 +105,11 @@ class Favorite extends Command
             $this->favUser = $this->user;
         }
 
+        if ($this->allPlayLists) {
+            $this->fetchAllPlayLists();
+            return;
+        }
+
         if (!$this->albumsOnly) {
             $this->fetchFavoriteTracks();
         }
@@ -112,6 +121,162 @@ class Favorite extends Command
         //http://drd.fm/play/album/40668
     }
 
+
+    private function filterDir($directory)
+    {
+        return str_replace(array('?', '/', '\\', ':'), '_', $directory);
+    }
+
+    private function fetchAllPlayLists()
+    {
+        $this->response->addContent(new Heading("Fetching all playlists"));
+        $letters = $this->client->getMusicLetters();
+        $genresMap = array();
+
+        foreach ($letters as $letter) {
+            $this->response->addContent(new Heading("Letter: " . urldecode($letter)));
+
+            $music = $this->client->getArtists($letter);
+            if (empty($music)) {
+                $this->response->error("No artists");
+            }
+            $letterDl = '';
+            $letterShDl = "#!/bin/bash\n\n";
+
+
+            foreach ($music as $item) {
+                if ($item instanceof Artist) {
+                    $this->response->addContent($item->name);
+                    $directory =  $item->name
+                        . ' (' . $item->genres . ') [' . $item->languages . ']';
+
+                    $directory = $this->filterDir($directory);
+                    $ld = $this->client->escapeDir($directory);
+                    $letterDl .= "cd \"$ld\"\ndl.cmd\ncd ..\n";
+                    $letterShDl .= "echo \"$ld\"\ncd \"$ld\"\n./dl.sh\ncd ..\n";
+
+                    $genres = explode(', ', $item->genres);
+                    foreach ($genres as $genre) {
+                        $path = urldecode($letter) . '/' . $directory;
+                        $genresMap[$genre][$path] = $item->name;
+                    }
+
+                    $directory = $this->storage . '/' . urldecode($letter) . '/' . $directory;
+                    if (!file_exists($directory)) {
+                        $bugName = $this->storage . '/' . urldecode($letter) . '/' . $this->filterDir($item->name
+                                . ' (' . $item->genresO . ') []');
+                        var_dump($bugName, $directory);
+
+                        if (file_exists($bugName)) {
+                            //die();
+                            rename($bugName, $directory);
+
+                        }
+                        //die('!');
+                    }
+
+
+                    if (!file_exists($directory)) {
+                        mkdir($directory, 0777, true);
+                    }
+
+                    $filePath = $directory . '/all.m3u';
+                    unset($playlist);
+
+                    if (!file_exists($filePath)) {
+                        $playlist = $this->client->getPlaylistByArtist($item);
+                        file_put_contents($filePath, $playlist);
+                    }
+
+                    if (!isset($playlist)) {
+                        $playlist = file_get_contents($filePath);
+                    }
+
+                    $artistDl = '';
+                    $artistShDl = "#!/bin/bash\n\n";
+
+
+                    try {
+                        $albums = $this->client->getAlbumsFromPlaylist($playlist);
+                    } catch (\Exception $e) {
+                        var_dump($filePath);
+                        die();
+                        unlink($filePath);
+                    }
+                    foreach ($albums as $album) {
+                        $albumDir = $this->filterDir($album->year . ' - ' . $album->title);
+                        $ld = $this->client->escapeDir($albumDir);
+                        $artistDl .= "cd \"$ld\"\ndl.cmd\ncd ..\n";
+                        $artistShDl .= "echo \"$ld\"\ncd \"$ld\"\n./dl.sh\ncd ..\n";
+                        $albumDir = $directory . '/' . $albumDir;
+                        //unlink($albumDir . ' /playlist.m3u');
+                        //rmdir($albumDir . ' ');
+                        //$this->response->addContent($albumDir);
+                        //continue;
+                        if (!file_exists($albumDir)) {
+                            mkdir($albumDir, 0777, true);
+                            file_put_contents($albumDir . '/playlist.m3u', $album->playlist);
+                        }
+                        file_put_contents($albumDir . '/dl.cmd', $album->cmdDl);
+                        file_put_contents($albumDir . '/dl.sh', $album->shDl);
+                        chmod($albumDir . '/dl.sh', 0777);
+                    }
+
+                    $filePath = $directory . '/dl.cmd';
+                    file_put_contents($filePath, $artistDl);
+                    $filePath = $directory . '/dl.sh';
+                    file_put_contents($filePath, $artistShDl);
+                    chmod($filePath, 0777);
+
+                    //print_r($albums);
+                }
+                if ($item instanceof Album) {
+                    $directory = $item->title
+                        . ' (' . $item->genres . ') [' . $item->languages . ']';
+
+                    $directory = str_replace(array('?', '/', '\\', ':'), '_', $directory);
+                    $directory = $this->storage . '/ZBORNIKI/' . $directory;
+                    if (!file_exists($directory)) {
+                        mkdir($directory, 0777, true);
+                    }
+
+                    $filePath = $directory . '/all.m3u';
+                    if (!file_exists($filePath)) {
+                        $playlist = $this->client->getPlaylistByAlbum($item);
+                        file_put_contents($filePath, $playlist);
+                    }
+                }
+            }
+            file_put_contents($this->storage . '/' . urldecode($letter) . '/dl.cmd', $letterDl);
+            file_put_contents($this->storage . '/' . urldecode($letter) . '/dl.sh', $letterShDl);
+            chmod($this->storage . '/' . urldecode($letter) . '/dl.sh', 0777);
+
+            //return;
+            //print_r($music);
+            //break;
+        }
+
+        if (!file_exists($this->storage . '/GENRES/')) {
+            mkdir($this->storage . '/GENRES/', 0777, true);
+        }
+        foreach ($genresMap as $genre => $items) {
+            $list = '';
+            $dl = '';
+            $sh = "#!/bin/bash\n\n";
+            foreach ($items as $path => $name) {
+                $list .= $path . "\n";
+                $path = $this->client->escapeDir($path);
+                $dl .= "echo \"$path\"\ncd \"../$path\"\ndl.cmd\ncd ../../GENRES\n";
+                $sh .= "echo \"$path\"\ncd \"../$path\"\n./dl.sh\ncd ../../GENRES\n";
+
+            }
+            file_put_contents($this->storage . '/GENRES/' . $genre . '.txt', $list);
+            file_put_contents($this->storage . '/GENRES/' . $genre . '-dl.cmd', $dl);
+            file_put_contents($this->storage . '/GENRES/' . $genre . '-dl.sh', $sh);
+            chmod($this->storage . '/GENRES/' . $genre . '-dl.sh', 0777);
+        }
+
+    }
 
     private function fetchFavoriteAlbums()
     {

@@ -1,5 +1,11 @@
 # Кто прочитает тот лох
 
+```php
+<?php
+phpinfo();
+echo 'a';
+```
+
 ```
 root@cntx:~# php ./drdl ./drd.fm
 Your login, nigger:vearutop
